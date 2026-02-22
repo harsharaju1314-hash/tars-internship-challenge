@@ -22,7 +22,7 @@ export default function Home() {
             </p>
             <Link
               href="/sign-in"
-              className="w-full block py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors shadow-md shadow-blue-500/20"
+              className="w-full block py-3 px-4 bg-blue-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-colors shadow-md shadow-emerald-500/20"
             >
               Sign In to Start Chatting
             </Link>

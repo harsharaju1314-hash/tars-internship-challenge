@@ -1,6 +1,6 @@
-# Tars Internship Challenge - Chat Application
+# Tars Full Stack Engineer Internship Coding Challenge 2026
 
-This project is a real-time live chat messaging web app built with Next.js (App Router), TypeScript, Convex, Clerk, and Tailwind CSS.
+This project is a real-time live chat messaging web app built for the **Tars Internship Challenge** using **Next.js (App Router), TypeScript, Convex, Clerk, and Tailwind CSS**.
 
 ## Features Implemented
 1. **Authentication**: Set up Clerk for authentication and synced users to my Convex database upon login. 

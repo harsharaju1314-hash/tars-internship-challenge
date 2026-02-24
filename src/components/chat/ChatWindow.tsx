@@ -5,6 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { ArrowLeft, Send, MoreVertical, Loader2, Smile, MessageSquare } from "lucide-react";
 import { format, isToday, isThisYear } from "date-fns";
 import Image from "next/image";
+import { Id } from "../../../convex/_generated/dataModel";
 
 const REACTIONS = ["👍", "❤️", "😂", "😮", "😢"];
 
@@ -24,15 +25,15 @@ export default function ChatWindow({
     const [isScrolledUp, setIsScrolledUp] = useState(false);
 
     const conversation = useQuery(api.conversations.getConversation, {
-        conversationId: conversationId as any,
+        conversationId: conversationId as Id<"conversations">,
     });
 
     const messages = useQuery(api.messages.getMessages, {
-        conversationId: conversationId as any,
+        conversationId: conversationId as Id<"conversations">,
     });
 
     const typingIndicators = useQuery(api.messages.getTypingIndicators, {
-        conversationId: conversationId as any,
+        conversationId: conversationId as Id<"conversations">,
     });
 
     const sendMessage = useMutation(api.messages.sendMessage);
@@ -43,12 +44,18 @@ export default function ChatWindow({
 
     useEffect(() => {
         if (messages && messages.length > 0) {
-            markAsRead({ conversationId: conversationId as any }).catch(console.error);
+            markAsRead({ conversationId: conversationId as Id<"conversations"> }).catch(console.error);
         }
     }, [messages, conversationId, markAsRead]);
 
+    const scrollToBottom = () => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        setIsScrolledUp(false);
+    };
+
     useEffect(() => {
         if (!isScrolledUp) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             scrollToBottom();
         }
     }, [messages, isScrolledUp]);
@@ -64,11 +71,6 @@ export default function ChatWindow({
         }
     };
 
-    const scrollToBottom = () => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-        setIsScrolledUp(false);
-    };
-
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!messageText.trim()) return;
@@ -76,9 +78,9 @@ export default function ChatWindow({
         try {
             const text = messageText;
             setMessageText("");
-            await updateTyping({ conversationId: conversationId as any, isTyping: false });
+            await updateTyping({ conversationId: conversationId as Id<"conversations">, isTyping: false });
             await sendMessage({
-                conversationId: conversationId as any,
+                conversationId: conversationId as Id<"conversations">,
                 content: text,
             });
             scrollToBottom();
@@ -89,11 +91,11 @@ export default function ChatWindow({
 
     useEffect(() => {
         const isTyping = messageText.length > 0;
-        updateTyping({ conversationId: conversationId as any, isTyping }).catch(console.error);
+        updateTyping({ conversationId: conversationId as Id<"conversations">, isTyping }).catch(console.error);
 
         const timeout = setTimeout(() => {
             if (isTyping) {
-                updateTyping({ conversationId: conversationId as any, isTyping: false }).catch(console.error);
+                updateTyping({ conversationId: conversationId as Id<"conversations">, isTyping: false }).catch(console.error);
             }
         }, 2000);
 
@@ -212,10 +214,11 @@ export default function ChatWindow({
                     </div>
                 ) : (
                     messages.map((msg, index) => {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const isMe = msg.senderId === user?.id || (msg as any).senderName === user?.fullName;
                         const showUserImage = !isMe && (!messages[index - 1] || messages[index - 1].senderId !== msg.senderId);
 
-                        const reactionCounts = msg.reactions.reduce((acc: any, r: any) => {
+                        const reactionCounts = msg.reactions.reduce((acc: Record<string, number>, r: { emoji: string }) => {
                             acc[r.emoji] = (acc[r.emoji] || 0) + 1;
                             return acc;
                         }, {});
@@ -243,10 +246,12 @@ export default function ChatWindow({
                                         <div className={`relative group/message flex items-center ${isMe ? "flex-row-reverse" : "flex-row"} gap-2`}>
 
                                             {/* Message Bubble */}
-                                            <div className={`px-4 py-2.5 rounded-2xl shadow-sm relative ${isMe
-                                                ? "bg-blue-600 text-white rounded-br-sm"
-                                                : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-100 dark:border-slate-800 rounded-bl-sm"
-                                                } ${msg.isDeleted ? "opacity-60 bg-transparent border-slate-300 dark:border-slate-700 text-slate-500 shadow-none" : ""}`}>
+                                            <div className={`px-4 py-2.5 rounded-2xl shadow-sm relative ${msg.isDeleted
+                                                ? `opacity-60 bg-transparent border border-slate-300 dark:border-slate-700 text-slate-500 shadow-none ${isMe ? "rounded-br-sm" : "rounded-bl-sm"}`
+                                                : isMe
+                                                    ? "bg-blue-600 text-white rounded-br-sm"
+                                                    : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-100 dark:border-slate-800 rounded-bl-sm"
+                                                }`}>
                                                 {msg.isDeleted ? (
                                                     <span className="italic">This message was deleted</span>
                                                 ) : (

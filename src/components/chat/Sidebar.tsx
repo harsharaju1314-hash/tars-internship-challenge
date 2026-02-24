@@ -5,6 +5,7 @@ import { api } from "../../../convex/_generated/api";
 import { Search, Loader2, MessageSquare, Plus } from "lucide-react";
 import { format, isToday, isThisYear } from "date-fns";
 import Image from "next/image";
+import { Id } from "../../../convex/_generated/dataModel";
 
 export default function Sidebar({
     selectedId,
@@ -27,7 +28,7 @@ export default function Sidebar({
     const handleUserClick = async (userId: string) => {
         try {
             setIsCreating(true);
-            const convId = await getOrCreateConversation({ otherUserId: userId as any });
+            const convId = await getOrCreateConversation({ otherUserId: userId as Id<"users"> });
             onSelect(convId);
             setSearchTerm("");
         } catch (e) {

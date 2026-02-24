@@ -155,7 +155,7 @@ export const getConversation = query({
                 .withIndex("by_conversationId", (q) => q.eq("conversationId", conversation._id))
                 .filter((q) => q.neq(q.field("userId"), me._id))
                 .collect();
-            for (let m of allMemberships) {
+            for (const m of allMemberships) {
                 otherUsers.push(await ctx.db.get(m.userId));
             }
         }

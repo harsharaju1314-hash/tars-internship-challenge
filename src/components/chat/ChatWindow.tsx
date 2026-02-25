@@ -487,7 +487,7 @@ export default function ChatWindow({
                                                         {isMe && (
                                                             <div className="flex justify-end mt-1 -mr-1">
                                                                 {msg.seenBy && msg.seenBy.length > 0 ? (
-                                                                    <CheckCheck className="w-3.5 h-3.5 text-blue-200" />
+                                                                    <CheckCheck className="w-3.5 h-3.5 text-sky-300 transition-colors" />
                                                                 ) : (
                                                                     <Check className="w-3.5 h-3.5 text-slate-300 opacity-70" />
                                                                 )}

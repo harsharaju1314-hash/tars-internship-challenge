@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
-import { ArrowLeft, Send, MoreVertical, Loader2, Smile, MessageSquare, Trash2, UserPlus, X, Search, CheckSquare, Square, Users, Pencil, Reply, Check, CheckCheck } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, Loader2, Smile, MessageSquare, Trash2, UserPlus, X, Search, CheckSquare, Square, Users, Pencil, Reply, CheckCheck } from "lucide-react";
 import { format, isToday, isThisYear, formatDistanceToNow } from "date-fns";
 import Image from "next/image";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -60,6 +60,7 @@ export default function ChatWindow({
     const editMessageMut = useMutation(api.messages.editMessage);
     const toggleReaction = useMutation(api.messages.toggleReaction);
     const markAsRead = useMutation(api.conversations.markAsRead);
+    const me = useQuery(api.users.getMe);
     const updateTyping = useMutation(api.messages.updateTypingStatus);
     const deleteGroupMut = useMutation(api.conversations.deleteGroup);
     const addGroupMembersMut = useMutation(api.conversations.addGroupMembers);
@@ -426,8 +427,7 @@ export default function ChatWindow({
                     </div>
                 ) : (
                     messages.map((msg, index) => {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const isMe = msg.senderId === user?.id || (msg as any).senderName === user?.fullName;
+                        const isMe = msg.senderId === me?._id;
                         const showUserImage = !isMe && (!messages[index - 1] || messages[index - 1].senderId !== msg.senderId);
 
                         const reactionCounts = msg.reactions.reduce((acc: Record<string, number>, r: { emoji: string }) => {
@@ -486,11 +486,10 @@ export default function ChatWindow({
                                                         </div>
                                                         {isMe && (
                                                             <div className="flex justify-end mt-1 -mr-1">
-                                                                {msg.seenBy && msg.seenBy.length > 0 ? (
-                                                                    <CheckCheck className="w-3.5 h-3.5 text-sky-300 transition-colors" />
-                                                                ) : (
-                                                                    <Check className="w-3.5 h-3.5 text-slate-300 opacity-70" />
-                                                                )}
+                                                                <CheckCheck className={`w-4 h-4 transition-all duration-300 ${msg.seenBy?.some(id => id !== msg.senderId)
+                                                                    ? "text-blue-400 scale-110 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                                                                    : "text-white/50"}`}
+                                                                />
                                                             </div>
                                                         )}
                                                     </div>

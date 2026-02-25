@@ -51,11 +51,13 @@ export const getOrCreateConversation = mutation({
             unreadCount: 0,
         });
 
-        await ctx.db.insert("conversationMembers", {
-            conversationId: newConversationId,
-            userId: args.otherUserId,
-            unreadCount: 0,
-        });
+        if (me._id !== args.otherUserId) {
+            await ctx.db.insert("conversationMembers", {
+                conversationId: newConversationId,
+                userId: args.otherUserId,
+                unreadCount: 0,
+            });
+        }
 
         return newConversationId;
     },
@@ -182,10 +184,12 @@ export const markAsRead = mutation({
             .withIndex("by_conversationId_userId", (q) =>
                 q.eq("conversationId", args.conversationId).eq("userId", me._id)
             )
-            .unique();
+            .first();
 
-        if (membership && membership.unreadCount > 0) {
-            await ctx.db.patch(membership._id, { unreadCount: 0 });
+        if (membership) {
+            if (membership.unreadCount > 0) {
+                await ctx.db.patch(membership._id, { unreadCount: 0 });
+            }
 
             // Mark individual messages as seen by me
             const messages = await ctx.db
@@ -194,13 +198,11 @@ export const markAsRead = mutation({
                 .collect();
 
             for (const msg of messages) {
-                if (msg.senderId !== me._id) {
-                    const seenBy = msg.seenBy || [];
-                    if (!seenBy.includes(me._id)) {
-                        await ctx.db.patch(msg._id, {
-                            seenBy: [...seenBy, me._id]
-                        });
-                    }
+                const seenBy = msg.seenBy || [];
+                if (!seenBy.includes(me._id)) {
+                    await ctx.db.patch(msg._id, {
+                        seenBy: [...seenBy, me._id]
+                    });
                 }
             }
         }

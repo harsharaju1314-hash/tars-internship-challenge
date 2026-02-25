@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
-import { ArrowLeft, Send, MoreVertical, Loader2, Smile, MessageSquare, Trash2, UserPlus, X, Search, CheckSquare, Square, Users } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, Loader2, Smile, MessageSquare, Trash2, UserPlus, X, Search, CheckSquare, Square, Users, Pencil } from "lucide-react";
 import { format, isToday, isThisYear, formatDistanceToNow } from "date-fns";
 import Image from "next/image";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -28,6 +28,7 @@ export default function ChatWindow({
     const [showViewMembers, setShowViewMembers] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedNewMembers, setSelectedNewMembers] = useState<Id<"users">[]>([]);
+    const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 
     const conversation = useQuery(api.conversations.getConversation, {
         conversationId: conversationId as Id<"conversations">,
@@ -48,6 +49,7 @@ export default function ChatWindow({
 
     const sendMessage = useMutation(api.messages.sendMessage);
     const deleteMessage = useMutation(api.messages.deleteMessage);
+    const editMessageMut = useMutation(api.messages.editMessage);
     const toggleReaction = useMutation(api.messages.toggleReaction);
     const markAsRead = useMutation(api.conversations.markAsRead);
     const updateTyping = useMutation(api.messages.updateTypingStatus);
@@ -117,11 +119,20 @@ export default function ChatWindow({
             const text = messageText;
             setMessageText("");
             await updateTyping({ conversationId: conversationId as Id<"conversations">, isTyping: false });
-            await sendMessage({
-                conversationId: conversationId as Id<"conversations">,
-                content: text,
-            });
-            scrollToBottom();
+
+            if (editingMessageId) {
+                await editMessageMut({
+                    messageId: editingMessageId as Id<"messages">,
+                    content: text,
+                });
+                setEditingMessageId(null);
+            } else {
+                await sendMessage({
+                    conversationId: conversationId as Id<"conversations">,
+                    content: text,
+                });
+                scrollToBottom();
+            }
         } catch (e) {
             console.error(e);
         }
@@ -446,7 +457,10 @@ export default function ChatWindow({
                                                 {msg.isDeleted ? (
                                                     <span className="italic">This message was deleted</span>
                                                 ) : (
-                                                    <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                                                    <div className="whitespace-pre-wrap break-words">
+                                                        {msg.content}
+                                                        {msg.isEdited && <span className="text-[10px] ml-2 opacity-70 italic">(edited)</span>}
+                                                    </div>
                                                 )}
 
                                                 {/* Reactions Badge */}
@@ -484,12 +498,20 @@ export default function ChatWindow({
                                                         )}
                                                     </button>
                                                     {isMe && (
-                                                        <button
-                                                            onClick={() => { if (confirm("Delete message?")) deleteMessage({ messageId: msg._id }) }}
-                                                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                        </button>
+                                                        <>
+                                                            <button
+                                                                onClick={() => { setEditingMessageId(msg._id); setMessageText(msg.content); }}
+                                                                className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
+                                                            >
+                                                                <Pencil className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => { if (confirm("Delete message?")) deleteMessage({ messageId: msg._id }) }}
+                                                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </>
                                                     )}
                                                 </div>
                                             )}
@@ -532,6 +554,17 @@ export default function ChatWindow({
 
             {/* Input Area */}
             <div className="absolute bottom-0 w-full bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 p-4">
+                {editingMessageId && (
+                    <div className="max-w-4xl mx-auto mb-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-between shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center gap-2">
+                            <Pencil className="w-4 h-4 text-blue-500" />
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Editing message...</span>
+                        </div>
+                        <button onClick={() => { setEditingMessageId(null); setMessageText(""); }} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
                 <form
                     onSubmit={handleSend}
                     className="max-w-4xl mx-auto flex items-end gap-2"

@@ -405,7 +405,7 @@ export default function ChatWindow({
                         }, {});
 
                         return (
-                            <div key={msg._id} className={`flex w-full ${isMe ? "justify-end" : "justify-start"} group`}>
+                            <div key={msg._id} className={`flex w-full ${isMe ? "justify-end" : "justify-start"} group animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out fill-mode-both`}>
                                 <div className={`flex max-w-[85%] sm:max-w-[75%] ${isMe ? "flex-row-reverse" : "flex-row"} gap-2 sm:gap-3`}>
 
                                     {/* Avatar for others */}

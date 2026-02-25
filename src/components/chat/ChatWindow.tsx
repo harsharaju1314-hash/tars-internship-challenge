@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { ArrowLeft, Send, MoreVertical, Loader2, Smile, MessageSquare, Trash2, UserPlus, X, Search, CheckSquare, Square, Users } from "lucide-react";
-import { format, isToday, isThisYear } from "date-fns";
+import { format, isToday, isThisYear, formatDistanceToNow } from "date-fns";
 import Image from "next/image";
 import { Id } from "../../../convex/_generated/dataModel";
 
@@ -221,7 +221,11 @@ export default function ChatWindow({
                                 <span>{conversation.otherUsers?.length || 0} members</span>
                             ) : (
                                 <span className={conversation.otherUser?.isOnline ? "text-green-600 dark:text-green-400 font-medium" : ""}>
-                                    {conversation.otherUser?.isOnline ? "Online" : "Offline"}
+                                    {conversation.otherUser?.isOnline
+                                        ? "Online"
+                                        : conversation.otherUser?.lastSeen
+                                            ? `Last seen ${formatDistanceToNow(conversation.otherUser.lastSeen, { addSuffix: true })}`
+                                            : "Offline"}
                                 </span>
                             )}
                         </div>
@@ -369,7 +373,13 @@ export default function ChatWindow({
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{member.name}</h4>
-                                            <span className="text-xs text-slate-500">{member.isOnline ? "Online" : "Offline"}</span>
+                                            <span className="text-xs text-slate-500">
+                                                {member.isOnline
+                                                    ? "Online"
+                                                    : member.lastSeen
+                                                        ? `Last seen ${formatDistanceToNow(member.lastSeen, { addSuffix: true })}`
+                                                        : "Offline"}
+                                            </span>
                                         </div>
                                     </div>
                                 );
@@ -381,7 +391,7 @@ export default function ChatWindow({
 
             {/* Messages */}
             <div
-                className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6"
+                className="flex-1 overflow-y-auto p-4 sm:p-6 pb-36 space-y-6"
                 ref={containerRef}
                 onScroll={handleScroll}
             >
@@ -506,7 +516,7 @@ export default function ChatWindow({
                     </div>
                 )}
 
-                <div ref={bottomRef} className="h-8" />
+                <div ref={bottomRef} className="h-12" />
             </div>
 
             {/* Floating Scroll to Bottom button */}
@@ -521,7 +531,7 @@ export default function ChatWindow({
             )}
 
             {/* Input Area */}
-            <div className="w-full bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 p-4 z-20 sticky bottom-0">
+            <div className="absolute bottom-0 w-full bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 p-4">
                 <form
                     onSubmit={handleSend}
                     className="max-w-4xl mx-auto flex items-end gap-2"

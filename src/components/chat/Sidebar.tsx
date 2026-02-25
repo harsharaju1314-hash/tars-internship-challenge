@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { UserButton } from "@clerk/nextjs";
+import { useTheme } from "next-themes";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Search, Loader2, MessageSquare, Plus, Users, CheckSquare, Square, X } from "lucide-react";
+import { Search, Loader2, MessageSquare, Plus, Users, CheckSquare, Square, X, Moon, Sun } from "lucide-react";
 import { format, isToday, isThisYear } from "date-fns";
 import Image from "next/image";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -15,6 +16,13 @@ export default function Sidebar({
     onSelect: (id: string) => void;
 }) {
     const [searchTerm, setSearchTerm] = useState("");
+    const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const myConversations = useQuery(api.conversations.getMyConversations);
     const searchResults = useQuery(
         api.users.searchUsers,
@@ -276,8 +284,18 @@ export default function Sidebar({
                         </span>
                     )}
                 </h2>
-                <div className="ring-2 ring-slate-100 dark:ring-slate-800 rounded-full shadow-sm hover:ring-blue-200 transition-all cursor-pointer">
-                    <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
+                <div className="flex items-center gap-3">
+                    {mounted && (
+                        <button
+                            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                            className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+                        >
+                            {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                        </button>
+                    )}
+                    <div className="ring-2 ring-slate-100 dark:ring-slate-800 rounded-full shadow-sm hover:ring-blue-200 transition-all cursor-pointer flex items-center justify-center">
+                        <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
+                    </div>
                 </div>
             </div>
 

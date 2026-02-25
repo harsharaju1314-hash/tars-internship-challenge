@@ -115,7 +115,7 @@ export default function Sidebar({
                         <div
                             key={conv._id}
                             onClick={() => onSelect(conv._id)}
-                            className={`p-4 border-b border-slate-100 dark:border-slate-800 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-slate-900/50 flex gap-4 ${isSelected ? "bg-blue-50/50 dark:bg-blue-900/10 border-l-4 border-l-blue-500 pl-3" : "pl-4"
+                            className={`flex gap-4 p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-200 border-b border-slate-100 dark:border-slate-800/50 hover:-translate-y-0.5 ${selectedId === conv._id ? "bg-slate-50 dark:bg-slate-800/80 border-l-4 border-l-blue-500" : "border-l-4 border-l-transparent"
                                 }`}
                         >
                             <div className="relative isolate">

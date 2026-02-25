@@ -381,7 +381,7 @@ export default function ChatWindow({
 
             {/* Messages */}
             <div
-                className="flex-1 overflow-y-auto p-4 sm:p-6 pb-32 space-y-6"
+                className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6"
                 ref={containerRef}
                 onScroll={handleScroll}
             >
@@ -506,7 +506,7 @@ export default function ChatWindow({
                     </div>
                 )}
 
-                <div ref={bottomRef} className="h-4" />
+                <div ref={bottomRef} className="h-8" />
             </div>
 
             {/* Floating Scroll to Bottom button */}
@@ -521,7 +521,7 @@ export default function ChatWindow({
             )}
 
             {/* Input Area */}
-            <div className="absolute bottom-0 w-full bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 p-4">
+            <div className="w-full bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 p-4 z-20 sticky bottom-0">
                 <form
                     onSubmit={handleSend}
                     className="max-w-4xl mx-auto flex items-end gap-2"

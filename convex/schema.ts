@@ -32,6 +32,7 @@ export default defineSchema({
         content: v.string(),
         isDeleted: v.boolean(),
         isEdited: v.optional(v.boolean()),
+        replyToId: v.optional(v.id("messages")),
     }).index("by_conversationId", ["conversationId"]),
 
     typingIndicators: defineTable({

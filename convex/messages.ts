@@ -20,11 +20,24 @@ export const getMessages = query({
                     .withIndex("by_messageId", (q) => q.eq("messageId", msg._id))
                     .collect();
 
+                let repliedTo = null;
+                if (msg.replyToId) {
+                    const replyMsg = await ctx.db.get(msg.replyToId);
+                    if (replyMsg) {
+                        const replySender = await ctx.db.get(replyMsg.senderId);
+                        repliedTo = {
+                            content: replyMsg.isDeleted ? "This message was deleted" : replyMsg.content,
+                            senderName: replySender?.name,
+                        };
+                    }
+                }
+
                 return {
                     ...msg,
                     senderName: sender?.name,
                     senderImageUrl: sender?.imageUrl,
                     reactions,
+                    repliedTo,
                 };
             })
         );
@@ -37,6 +50,7 @@ export const sendMessage = mutation({
     args: {
         conversationId: v.id("conversations"),
         content: v.string(),
+        replyToId: v.optional(v.id("messages")),
     },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
@@ -54,6 +68,7 @@ export const sendMessage = mutation({
             senderId: me._id,
             content: args.content,
             isDeleted: false,
+            replyToId: args.replyToId,
         });
 
         await ctx.db.patch(args.conversationId, {

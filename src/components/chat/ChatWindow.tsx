@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
-import { ArrowLeft, Send, MoreVertical, Loader2, Smile, MessageSquare } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, Loader2, Smile, MessageSquare, Trash2, UserPlus, X, Search, CheckSquare, Square } from "lucide-react";
 import { format, isToday, isThisYear } from "date-fns";
 import Image from "next/image";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -23,6 +23,10 @@ export default function ChatWindow({
     const bottomRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [isScrolledUp, setIsScrolledUp] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const [showAddMember, setShowAddMember] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [selectedNewMembers, setSelectedNewMembers] = useState<Id<"users">[]>([]);
 
     const conversation = useQuery(api.conversations.getConversation, {
         conversationId: conversationId as Id<"conversations">,
@@ -36,11 +40,18 @@ export default function ChatWindow({
         conversationId: conversationId as Id<"conversations">,
     });
 
+    const searchResults = useQuery(
+        api.users.searchUsers,
+        searchQuery.length > 0 ? { searchTerm: searchQuery } : "skip"
+    );
+
     const sendMessage = useMutation(api.messages.sendMessage);
     const deleteMessage = useMutation(api.messages.deleteMessage);
     const toggleReaction = useMutation(api.messages.toggleReaction);
     const markAsRead = useMutation(api.conversations.markAsRead);
     const updateTyping = useMutation(api.messages.updateTypingStatus);
+    const deleteGroupMut = useMutation(api.conversations.deleteGroup);
+    const addGroupMembersMut = useMutation(api.conversations.addGroupMembers);
 
     useEffect(() => {
         if (messages && messages.length > 0) {
@@ -55,7 +66,7 @@ export default function ChatWindow({
 
     useEffect(() => {
         if (!isScrolledUp) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+
             scrollToBottom();
         }
     }, [messages, isScrolledUp]);
@@ -68,6 +79,32 @@ export default function ChatWindow({
             setIsScrolledUp(true);
         } else {
             setIsScrolledUp(false);
+        }
+    };
+
+    const handleDeleteGroup = async () => {
+        if (!confirm("Are you sure you want to delete this group?")) return;
+        try {
+            await deleteGroupMut({ conversationId: conversationId as Id<"conversations"> });
+            onBack();
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleAddMembers = async () => {
+        if (selectedNewMembers.length === 0) return;
+        try {
+            await addGroupMembersMut({
+                conversationId: conversationId as Id<"conversations">,
+                memberIds: selectedNewMembers,
+            });
+            setShowAddMember(false);
+            setSelectedNewMembers([]);
+            setSearchQuery("");
+            setShowMenu(false);
+        } catch (e) {
+            console.error(e);
         }
     };
 
@@ -190,13 +227,106 @@ export default function ChatWindow({
                     </div>
                 </div>
 
-                {/* Actions (placeholder for extra features) */}
-                <div>
-                    <button className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
-                        <MoreVertical className="h-5 w-5" />
-                    </button>
+                {/* Actions */}
+                <div className="relative">
+                    {conversation.isGroup && (
+                        <>
+                            <button
+                                onClick={() => setShowMenu(!showMenu)}
+                                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+                            >
+                                <MoreVertical className="h-5 w-5" />
+                            </button>
+                            {showMenu && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1 z-50">
+                                    <button
+                                        onClick={() => {
+                                            setShowAddMember(true);
+                                            setShowMenu(false);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                                    >
+                                        <UserPlus className="w-4 h-4" /> Add members
+                                    </button>
+                                    <button
+                                        onClick={handleDeleteGroup}
+                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2"
+                                    >
+                                        <Trash2 className="w-4 h-4" /> Delete group
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
+
+            {/* Add Member Modal */}
+            {showAddMember && (
+                <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-950 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col max-h-[80vh]">
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                            <h3 className="font-semibold text-slate-900 dark:text-white">Add Members</h3>
+                            <button onClick={() => setShowAddMember(false)} className="text-slate-400 hover:text-slate-600">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+                            <div className="relative">
+                                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search users..."
+                                    className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-900 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-2">
+                            {searchResults === undefined && searchQuery ? (
+                                <div className="flex justify-center p-4"><Loader2 className="w-5 h-5 animate-spin text-blue-500" /></div>
+                            ) : searchResults?.length === 0 ? (
+                                <div className="text-center p-4 text-sm text-slate-500">No users found</div>
+                            ) : (
+                                searchResults?.map(searchUser => {
+                                    const isAlreadyMember = conversation.otherUsers?.some(u => u?._id === searchUser._id) || searchUser.clerkId === user?.id;
+                                    if (isAlreadyMember) return null;
+
+                                    const isSelected = selectedNewMembers.includes(searchUser._id);
+                                    return (
+                                        <div
+                                            key={searchUser._id}
+                                            onClick={() => setSelectedNewMembers(prev => isSelected ? prev.filter(id => id !== searchUser._id) : [...prev, searchUser._id])}
+                                            className="flex items-center gap-3 p-2 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl cursor-pointer transition-colors"
+                                        >
+                                            <div className="text-blue-500">
+                                                {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5 text-slate-300 dark:text-slate-700" />}
+                                            </div>
+                                            <div className="w-8 h-8 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-800">
+                                                {searchUser.imageUrl ? (
+                                                    <Image src={searchUser.imageUrl} width={32} height={32} alt={searchUser.name!} className="w-full h-full object-cover" />
+                                                ) : null}
+                                            </div>
+                                            <div className="text-sm font-medium text-slate-700 dark:text-slate-300">{searchUser.name}</div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
+                            <span className="text-xs text-slate-500 font-medium">{selectedNewMembers.length} selected</span>
+                            <button
+                                onClick={handleAddMembers}
+                                disabled={selectedNewMembers.length === 0}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors"
+                            >
+                                Add to group
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Messages */}
             <div

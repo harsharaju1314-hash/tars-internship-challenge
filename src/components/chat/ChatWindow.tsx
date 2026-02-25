@@ -29,6 +29,12 @@ export default function ChatWindow({
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedNewMembers, setSelectedNewMembers] = useState<Id<"users">[]>([]);
     const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+    const [now, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+        const interval = setInterval(() => setNow(Date.now()), 60000);
+        return () => clearInterval(interval);
+    }, []);
 
     const conversation = useQuery(api.conversations.getConversation, {
         conversationId: conversationId as Id<"conversations">,
@@ -218,7 +224,7 @@ export default function ChatWindow({
                                 </div>
                             )}
                         </div>
-                        {!conversation.isGroup && conversation.otherUser?.isOnline && (
+                        {!conversation.isGroup && conversation.otherUser?.isOnline && now - (conversation.otherUser?.lastSeen || 0) < 120000 && (
                             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white dark:border-slate-950 rounded-full" />
                         )}
                     </div>
@@ -231,8 +237,8 @@ export default function ChatWindow({
                             {conversation.isGroup ? (
                                 <span>{conversation.otherUsers?.length || 0} members</span>
                             ) : (
-                                <span className={conversation.otherUser?.isOnline ? "text-green-600 dark:text-green-400 font-medium" : ""}>
-                                    {conversation.otherUser?.isOnline
+                                <span className={conversation.otherUser?.isOnline && now - (conversation.otherUser?.lastSeen || 0) < 120000 ? "text-green-600 dark:text-green-400 font-medium" : ""}>
+                                    {conversation.otherUser?.isOnline && now - (conversation.otherUser?.lastSeen || 0) < 120000
                                         ? "Online"
                                         : conversation.otherUser?.lastSeen
                                             ? `Last seen ${formatDistanceToNow(conversation.otherUser.lastSeen, { addSuffix: true })}`
@@ -378,14 +384,14 @@ export default function ChatWindow({
                                                     </div>
                                                 )}
                                             </div>
-                                            {member.isOnline && (
+                                            {member.isOnline && now - (member.lastSeen || 0) < 120000 && (
                                                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-slate-950 rounded-full" />
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{member.name}</h4>
                                             <span className="text-xs text-slate-500">
-                                                {member.isOnline
+                                                {member.isOnline && now - (member.lastSeen || 0) < 120000
                                                     ? "Online"
                                                     : member.lastSeen
                                                         ? `Last seen ${formatDistanceToNow(member.lastSeen, { addSuffix: true })}`

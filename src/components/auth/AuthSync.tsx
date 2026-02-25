@@ -14,19 +14,39 @@ export default function AuthSync({ children }: { children: React.ReactNode }) {
             storeUser().catch(console.error);
 
             // Handle online status
-            const handleOnline = () => setOnline({ isOnline: true });
-            const handleOffline = () => setOnline({ isOnline: false });
+            const syncStatus = () => {
+                const isOnline = navigator.onLine && document.visibilityState === "visible";
+                setOnline({ isOnline }).catch(() => { });
+            };
 
-            handleOnline();
+            // Initial sync and setup interval for heartbeat
+            syncStatus();
+            const interval = setInterval(syncStatus, 30000);
 
-            window.addEventListener("online", handleOnline);
+            const handleVisibilityChange = () => {
+                if (document.visibilityState === "hidden") {
+                    setOnline({ isOnline: false }).catch(() => { });
+                } else {
+                    syncStatus();
+                }
+            };
+
+            const handleOffline = () => setOnline({ isOnline: false }).catch(() => { });
+
+            window.addEventListener("online", syncStatus);
             window.addEventListener("offline", handleOffline);
-            window.addEventListener("beforeunload", handleOffline);
+            window.addEventListener("pagehide", handleOffline);
+            document.addEventListener("visibilitychange", handleVisibilityChange);
 
             return () => {
-                window.removeEventListener("online", handleOnline);
+                clearInterval(interval);
+                window.removeEventListener("online", syncStatus);
                 window.removeEventListener("offline", handleOffline);
-                window.removeEventListener("beforeunload", handleOffline);
+                window.removeEventListener("pagehide", handleOffline);
+                document.removeEventListener("visibilitychange", handleVisibilityChange);
+
+                // Try setting offline on unmount (e.g. logging out or leaving)
+                handleOffline();
             };
         }
     }, [isAuthenticated, storeUser, setOnline]);

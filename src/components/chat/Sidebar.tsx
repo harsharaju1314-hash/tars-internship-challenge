@@ -36,6 +36,12 @@ export default function Sidebar({
     const [isGroupMode, setIsGroupMode] = useState(false);
     const [selectedUsers, setSelectedUsers] = useState<Id<"users">[]>([]);
     const [groupName, setGroupName] = useState("");
+    const [now, setNow] = useState(() => Date.now());
+
+    React.useEffect(() => {
+        const interval = setInterval(() => setNow(Date.now()), 60000);
+        return () => clearInterval(interval);
+    }, []);
 
     const handleUserClick = async (userId: string) => {
         if (isGroupMode) {
@@ -142,7 +148,7 @@ export default function Sidebar({
                                         </div>
                                     )}
                                 </div>
-                                {otherUser?.isOnline && (
+                                {otherUser?.isOnline && now - (otherUser.lastSeen || 0) < 120000 && (
                                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-slate-950 rounded-full z-10" />
                                 )}
                             </div>
@@ -247,7 +253,7 @@ export default function Sidebar({
                                     </div>
                                 )}
                             </div>
-                            {user.isOnline && (
+                            {user.isOnline && now - (user.lastSeen || 0) < 120000 && (
                                 <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-slate-950 rounded-full" />
                             )}
                         </div>
@@ -256,6 +262,11 @@ export default function Sidebar({
                             <h3 className="font-medium text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                 {user.name}
                             </h3>
+                            <span className="text-xs text-slate-500">
+                                {user.isOnline && now - (user.lastSeen || 0) < 120000
+                                    ? "Online"
+                                    : "Offline"}
+                            </span>
                         </div>
                         {!isGroupMode && (
                             isCreating ? (

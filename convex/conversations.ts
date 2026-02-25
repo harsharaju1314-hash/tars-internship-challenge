@@ -186,6 +186,23 @@ export const markAsRead = mutation({
 
         if (membership && membership.unreadCount > 0) {
             await ctx.db.patch(membership._id, { unreadCount: 0 });
+
+            // Mark individual messages as seen by me
+            const messages = await ctx.db
+                .query("messages")
+                .withIndex("by_conversationId", (q) => q.eq("conversationId", args.conversationId))
+                .collect();
+
+            for (const msg of messages) {
+                if (msg.senderId !== me._id) {
+                    const seenBy = msg.seenBy || [];
+                    if (!seenBy.includes(me._id)) {
+                        await ctx.db.patch(msg._id, {
+                            seenBy: [...seenBy, me._id]
+                        });
+                    }
+                }
+            }
         }
     },
 });

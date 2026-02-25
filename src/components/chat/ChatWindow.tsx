@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
-import { ArrowLeft, Send, MoreVertical, Loader2, Smile, MessageSquare, Trash2, UserPlus, X, Search, CheckSquare, Square, Users, Pencil, Reply } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, Loader2, Smile, MessageSquare, Trash2, UserPlus, X, Search, CheckSquare, Square, Users, Pencil, Reply, Check, CheckCheck } from "lucide-react";
 import { format, isToday, isThisYear, formatDistanceToNow } from "date-fns";
 import Image from "next/image";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -479,9 +479,20 @@ export default function ChatWindow({
                                                 {msg.isDeleted ? (
                                                     <span className="italic">This message was deleted</span>
                                                 ) : (
-                                                    <div className="whitespace-pre-wrap break-words">
-                                                        {msg.content}
-                                                        {msg.isEdited && <span className="text-[10px] ml-2 opacity-70 italic">(edited)</span>}
+                                                    <div className="flex flex-col">
+                                                        <div className="whitespace-pre-wrap break-words">
+                                                            {msg.content}
+                                                            {msg.isEdited && <span className="text-[10px] ml-2 opacity-70 italic">(edited)</span>}
+                                                        </div>
+                                                        {isMe && (
+                                                            <div className="flex justify-end mt-1 -mr-1">
+                                                                {msg.seenBy && msg.seenBy.length > 0 ? (
+                                                                    <CheckCheck className="w-3.5 h-3.5 text-blue-200" />
+                                                                ) : (
+                                                                    <Check className="w-3.5 h-3.5 text-slate-300 opacity-70" />
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
 
